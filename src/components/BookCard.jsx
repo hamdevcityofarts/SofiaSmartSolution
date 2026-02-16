@@ -19,7 +19,7 @@ export default function BookCard({ book }) {
     const message = encodeURIComponent(
       `Bonjour, je suis intéressé par le livre "${book.title}" de ${book.author}. Est-il toujours disponible ?`
     );
-    window.open(`https://wa.me/${"+237 656708074"}?text=${"Bienvenu dans a Sofia Smart Solutions"}`, '_blank');
+    window.open(`https://wa.me/${"+237 656708074"}?text=${message}`, '_blank');
   };
 
   return (
