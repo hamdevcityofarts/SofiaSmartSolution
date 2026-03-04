@@ -1,18 +1,42 @@
-# Étape 1 : Construction de l'application (Build)
-FROM node:20-alpine AS build
+FROM node:20-alpine AS builder
+
 WORKDIR /app
 
-# Installation des dépendances
 COPY package*.json ./
-RUN npm install
 
-# Copie du reste des fichiers et compilation
+# ✅ CORRIGÉ : sans --only=production pour inclure vite, tailwind, etc.
+RUN npm ci && npm cache clean --force
+
 COPY . .
+
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
-# Étape 2 : Serveur de production pour distribuer les fichiers
+# ─── Stage production ───────────────────────────────────────────
 FROM nginx:stable-alpine
-# Vite place les fichiers compilés dans le dossier 'dist'
-COPY --from=build /app/dist /usr/share/nginx/html
+
+RUN apk add --no-cache curl
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# ✅ CORRIGÉ : chemins que nginx:stable-alpine autorise à un non-root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
+ && chown -R appuser:appgroup \
+      /usr/share/nginx/html \
+      /var/cache/nginx \
+      /var/log/nginx \
+ && chmod -R 755 /var/cache/nginx /var/log/nginx \
+ && touch /var/run/nginx.pid \
+ && chown appuser:appgroup /var/run/nginx.pid
+
+USER appuser
+
 EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost/ || exit 1
+
 CMD ["nginx", "-g", "daemon off;"]
