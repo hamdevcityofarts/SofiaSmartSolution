@@ -22,18 +22,6 @@ RUN apk add --no-cache curl
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# ✅ CORRIGÉ : chemins que nginx:stable-alpine autorise à un non-root
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
- && chown -R appuser:appgroup \
-      /usr/share/nginx/html \
-      /var/cache/nginx \
-      /var/log/nginx \
- && chmod -R 755 /var/cache/nginx /var/log/nginx \
- && touch /var/run/nginx.pid \
- && chown appuser:appgroup /var/run/nginx.pid
-
-USER appuser
-
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
